@@ -1,8 +1,11 @@
 from app import app, lm
 from flask import request, redirect, render_template, url_for, flash
-from flask.ext.login import login_user, logout_user, login_required
-from .forms import LoginForm
+from flask_login import login_user, logout_user, login_required
+from .forms import LoginForm, RegistrationForm
 from .user import User
+from werkzeug.security import generate_password_hash
+from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 
 
 @app.route('/')
@@ -29,6 +32,23 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm(request.form)
+    if request.method == 'POST' and form.validate_on_submit():
+        collection = MongoClient()["blog"]["users"]
+        user = form.username.data
+        password = form.password.data
+        pass_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        
+        try:
+            collection.insert_one({"_id": user, "password": pass_hash})
+            flash("Username created!", category='success')
+            return redirect(url_for('login'))
+        except DuplicateKeyError:
+            flash("Username already exists!", category='warning')
+            return redirect(url_for('register'))
+    return render_template('register.html', form=form)
 
 @app.route('/write', methods=['GET', 'POST'])
 @login_required
