@@ -15,14 +15,17 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # This allows the user to login to the system.
     form = LoginForm()
     if request.method == 'POST' and form.validate_on_submit():
         user = app.config['USERS_COLLECTION'].find_one({"_id": form.username.data})
+        # If the user is validated, it will flash successful.
         if user and User.validate_login(user['password'], form.password.data):
             user_obj = User(user['_id'])
             login_user(user_obj)
             flash("Logged in successfully!", category='success')
             return redirect(request.args.get("next") or url_for("write"))
+        # Else it will deny access
         flash("Wrong username or password!", category='error')
     return render_template('login.html', title='login', form=form)
 
