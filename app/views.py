@@ -18,15 +18,15 @@ def login():
     # This allows the user to login to the system.
     form = LoginForm()
     if request.method == 'POST' and form.validate_on_submit():
-        user = app.config['USERS_COLLECTION'].find_one({"_id": form.username.data})
+        email = app.config['USERS_COLLECTION'].find_one({"_id": form.email.data})
         # If the user is validated, it will flash successful.
-        if user and User.validate_login(user['password'], form.password.data):
-            user_obj = User(user['_id'])
-            login_user(user_obj)
+        if email and User.validate_login(email['password'], form.password.data):
+            email_obj = User(email['_id'])
+            login_user(email_obj)
             flash("Logged in successfully!", category='success')
             return redirect(request.args.get("next") or url_for("write"))
         # Else it will deny access
-        flash("Wrong username or password!", category='error')
+        flash("Wrong email or password!", category='error')
     return render_template('login.html', title='login', form=form)
 
 
@@ -37,19 +37,19 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegistrationForm(request.form)
+    form = RegistrationForm()
     if request.method == 'POST' and form.validate_on_submit():
         collection = MongoClient()["blog"]["users"]
-        user = form.username.data
+        email = form.email.data
         password = form.password.data
         pass_hash = generate_password_hash(password, method='pbkdf2:sha256')
         
         try:
-            collection.insert_one({"_id": user, "password": pass_hash})
-            flash("Username created!", category='success')
+            collection.insert_one({"_id": email, "password": pass_hash})
+            flash("Account created!", category='success')
             return redirect(url_for('login'))
         except DuplicateKeyError:
-            flash("Username already exists!", category='warning')
+            flash("Email already exists!", category='warning')
             return redirect(url_for('register'))
     return render_template('register.html', form=form)
 
